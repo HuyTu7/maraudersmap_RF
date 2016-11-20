@@ -25,11 +25,9 @@ class RF(object):
 		X = []
 		item = {}
 		if fname.endswith(".txt"):
-			dataT = []
 			with open(fname, 'r') as f_in:
 				for line in f_in:
-					dataT.append(json.loads(line))
-					X.extend(dataT)
+					X.append(json.loads(line))
 			for i in X:
 				item["wifi-fingerprint"] = i["wifi-fingerprint"]
 				item["location"] = i["location"]
