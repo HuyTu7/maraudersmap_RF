@@ -4,12 +4,13 @@ import pickle
 import sklearn
 import random
 import numpy
+import copy
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.pipeline import make_pipeline
 from random import shuffle
 
-random.seed(123)
+#random.seed(123)
 class RF(object):
 	#data = []
 	def __init__(self):
@@ -19,30 +20,28 @@ class RF(object):
 		self.trainY = []
 		self.testX = numpy.array([])
 		self.testY = []
-		self.macs = []
+		self.macs = set()
+		self.locations = set()
 
 	def get_data(self, fname):
 		X = []
 		item = {}
-		if fname.endswith(".txt"):
-			with open(fname, 'r') as f_in:
-				for line in f_in:
-					X.append(json.loads(line))
-			for i in X:
-				item["wifi-fingerprint"] = i["wifi-fingerprint"]
-				item["location"] = i["location"]
-				self.data.append(item)
-				for j in i["wifi-fingerprint"]:
-					self.macs.append(j["mac"])
+		with open(fname, 'r') as f_in:
+			for line in f_in:
+				X.append(json.loads(line))
+		index = 0;
+		for i in X:				
+			item["wifi-fingerprint"] = i["wifi-fingerprint"]
+			item["location"] = i["location"]
+			self.data.append(copy.deepcopy(item))
+			for j in i["wifi-fingerprint"]:
+				self.macs.add(j["mac"])
+			self.locations.add(i["location"])
+			index += 1
 		self.size = len(self.data)
-		self.macs = set(self.macs)
 		self.macs = list(self.macs)
-		#data = self.data
-		print(self.size)
-		print(len(self.macs))
+		self.locations = list(self.locations)
 		return self.data
-	#def get_train_data(unf_data):
-
 
 
 	def splitDataset(self, dataset, splitRatio):
@@ -53,18 +52,17 @@ class RF(object):
 		xs = [i for i in range(len(dataset))]
 		shuffle(xs)
 		while index < len(xs):
-			if index < trainSize:
-				item = numpy.array([self.makeMatrix(dataset, index)])
-				#print(item.shape)
-				#print(self.trainX.shape)
-				self.trainX = numpy.concatenate((self.trainX, item),axis=0)
-				self.trainY.append(dataset[xs[index]]["location"])
+			item = numpy.zeros(len(self.macs))
+			for signal in dataset[xs[index]]['wifi-fingerprint']:
+				item[self.macs.index(signal['mac'])] = signal['rssi']
+			if index < trainSize:				
+				self.trainX = numpy.concatenate((self.trainX, [item]),axis=0)
+				self.trainY.append(self.locations.index(dataset[xs[index]]["location"]))
 			else:
-				item = numpy.array([self.makeMatrix(dataset, index)])
-				self.testX = numpy.concatenate((self.testX, item),axis=0)
-				self.testY.append(dataset[xs[index]]["location"])
+				self.testX = numpy.concatenate((self.testX, [item]),axis=0)				
+				self.testY.append(self.locations.index(dataset[xs[index]]["location"]))
 			index += 1
-		print(self.trainX.shape)
+		print(self.trainX.shape) 
 		print(len(self.trainY))
 		print(self.testX.shape)
 		print(len(self.testY))
@@ -82,16 +80,16 @@ class RF(object):
 				else:
 					value = 0
 			item.append(value)
-		#print(item)
-		#print(len(item))
 		return item
 
-	def randomF():
-		clf = RandomForestClassifier(n_estimators=10, max_depth=None, 
-								min_samples_split=2, random_state=0)
+	def randomFC(self):
+		clf = RandomForestClassifier(n_estimators=500, n_jobs = -1)
+		clf.fit(self.trainX, self.trainY)
+		print(self.locations)
+		print(clf.score(self.testX, self.testY))		
 		
+	
 randomF = RF()
-data = randomF.get_data("data/learning.txt")
-#print(randomF.data)
-#randomF.makeMatrix(data, 0)
-randomF.splitDataset(data, 0.75)
+data = randomF.get_data("data/hackduke.rf.data")
+randomF.splitDataset(data, 0.5)
+randomF.randomFC()
