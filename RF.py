@@ -10,9 +10,12 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.pipeline import make_pipeline
 from random import shuffle
 
+__author__ = "Huy Tu"
+__email__  = "hqtu@ncsu.edu"
+__githubID__ = "HuyTu7"
+
 #random.seed(123)
 class RF(object):
-	#data = []
 	def __init__(self):
 		self.size = 0
 		self.data = []
@@ -24,20 +27,16 @@ class RF(object):
 		self.locations = set()
 
 	def get_data(self, fname):
-		X = []
 		item = {}
 		with open(fname, 'r') as f_in:
 			for line in f_in:
-				X.append(json.loads(line))
-		index = 0;
-		for i in X:				
-			item["wifi-fingerprint"] = i["wifi-fingerprint"]
-			item["location"] = i["location"]
-			self.data.append(copy.deepcopy(item))
-			for j in i["wifi-fingerprint"]:
-				self.macs.add(j["mac"])
-			self.locations.add(i["location"])
-			index += 1
+				signal_data = json.loads(line)
+				item["wifi-fingerprint"] = signal_data["wifi-fingerprint"]
+				item["location"] = signal_data["location"]
+				self.locations.add(signal_data["location"])
+				self.data.append(copy.deepcopy(item))
+				for signal in signal_data["wifi-fingerprint"]:
+					self.macs.add(signal["mac"])
 		self.size = len(self.data)
 		self.macs = list(self.macs)
 		self.locations = list(self.locations)
@@ -62,12 +61,8 @@ class RF(object):
 				self.testX = numpy.concatenate((self.testX, [item]),axis=0)				
 				self.testY.append(self.locations.index(dataset[xs[index]]["location"]))
 			index += 1
-		print(self.trainX.shape) 
-		print(len(self.trainY))
-		print(self.testX.shape)
-		print(len(self.testY))
-
-	def makeMatrix(self, dataset, index):
+	
+	'''def makeMatrix(self, dataset, index):
 		item = [] 
 		dataT = dataset[index]
 		dataTest = dataT["wifi-fingerprint"]
@@ -80,7 +75,7 @@ class RF(object):
 				else:
 					value = 0
 			item.append(value)
-		return item
+		return item '''
 
 	def randomFC(self):
 		clf = RandomForestClassifier(n_estimators=500, n_jobs = -1)
@@ -91,5 +86,5 @@ class RF(object):
 	
 randomF = RF()
 data = randomF.get_data("data/hackduke.rf.data")
-randomF.splitDataset(data, 0.5)
+randomF.splitDataset(data, 0.6)
 randomF.randomFC()
